@@ -270,8 +270,8 @@ class Compressor(multiprocessing.Process):
             t = time.time()
             
             # Save the compressed image
-            filename = self.saveFF(compressed, startTime, self.total_compressed*256)
-            self.total_compressed += 1
+            filename = self.saveFF(compressed, startTime, self.total_compressed.value*256)
+            self.total_compressed.value += 1
             
             log.debug(self.name + " compressor - saving: " + str(time.time() - t) + "s")
 
