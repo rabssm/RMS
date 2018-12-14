@@ -48,7 +48,7 @@ class Compressor(multiprocessing.Process):
     running = False
     
     def __init__(self, name, data_dir, array1, startTime1, array2, startTime2, total_compressed, \
-        variable_access, config, detector=None, live_view=None, flat_struct=None):
+        compressor_lock, variable_access, config, detector=None, live_view=None, flat_struct=None):
         """
 
         Arguments:
@@ -57,6 +57,8 @@ class Compressor(multiprocessing.Process):
             startTime1: float in shared memory that holds time of first frame in array1
             array2: second numpy array in shared memory
             startTime1: float in shared memory that holds time of first frame in array2
+            total_compressed: [multiprocessing Value] Total FF files processed.
+            compressor_lock: [multiprocessing Lock] Lock to control shared variable access.
             variable_access: [multiprocessing Value] COntrols access to shared variables. When set to 1,
                 the shared memory variables are access in another process.
             config: configuration class
@@ -78,6 +80,7 @@ class Compressor(multiprocessing.Process):
         self.startTime1 = startTime1
         self.array2 = array2
         self.startTime2 = startTime2
+        self.compressor_lock = compressor_lock
         self.variable_access = variable_access
         self.total_compressed = total_compressed
         self.config = config
@@ -204,17 +207,21 @@ class Compressor(multiprocessing.Process):
             while True:
 
                 # Wait unil the start time variables can be accessed
-                while self.variable_access.value == 1:
+                while True:
+                    with self.compressor_lock:
+                        if self.variable_access.value == 0:
+                            break
                     time.sleep(0.05)
 
 
-                self.variable_access.value = 1
+                with self.compressor_lock:
+                    self.variable_access.value = 1
 
-                if self.startTime1.value != 0 or self.startTime2.value != 0:
+                    if self.startTime1.value != 0 or self.startTime2.value != 0:
+                        self.variable_access.value = 0
+                        break
+
                     self.variable_access.value = 0
-                    break
-
-                self.variable_access.value = 0
 
                 # Exit function if process was stopped from the outside
                 if self.exit.is_set():
@@ -229,32 +236,35 @@ class Compressor(multiprocessing.Process):
                 
 
             # Wait unil the start time variables can be accessed
-            while self.variable_access.value == 1:
+            while True:
+                with self.compressor_lock:
+                    if self.variable_access.value == 0:
+                        break
                 time.sleep(0.05)
 
+            with self.compressor_lock:
+                self.variable_access.value = 1
 
-            self.variable_access.value = 1
+                
+                if self.startTime1.value != 0:
 
-            
-            if self.startTime1.value != 0:
+                    # Retrieve time of first frame
+                    startTime = float(self.startTime1.value)
 
-                # Retrieve time of first frame
-                startTime = float(self.startTime1.value)
+                    # Copy frames
+                    frames = self.array1 
+                    self.startTime1.value = 0
 
-                # Copy frames
-                frames = self.array1 
-                self.startTime1.value = 0
+                else:
 
-            else:
+                    # Retrieve time of first frame
+                    startTime = float(self.startTime2.value)
 
-                # Retrieve time of first frame
-                startTime = float(self.startTime2.value)
+                    # Copy frames
+                    frames = self.array2 
+                    self.startTime2.value = 0
 
-                # Copy frames
-                frames = self.array2 
-                self.startTime2.value = 0
-
-            self.variable_access.value = 0
+                self.variable_access.value = 0
 
             
             #log.debug("memory copy: " + str(time.time() - t) + "s")
@@ -270,8 +280,9 @@ class Compressor(multiprocessing.Process):
             t = time.time()
             
             # Save the compressed image
-            filename = self.saveFF(compressed, startTime, self.total_compressed.value*256)
-            self.total_compressed.value += 1
+            with self.compressor_lock:
+                filename = self.saveFF(compressed, startTime, self.total_compressed.value*256)
+                self.total_compressed.value += 1
             
             log.debug(self.name + " compressor - saving: " + str(time.time() - t) + "s")
 
