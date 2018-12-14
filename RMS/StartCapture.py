@@ -192,6 +192,7 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     startTime2 = multiprocessing.Value('d', 0.0)
 
     variable_access = multiprocessing.Value('d', 0.0)
+    total_compressed = multiprocessing.Value('L', 0)
 
     log.info('Initializing frame buffers done!')
 
@@ -225,11 +226,13 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     
     # Initialize compression
     compressor = Compressor('1st', night_data_dir, sharedArray, startTime, sharedArray2, startTime2, \
-        variable_access, config, detector=detector, live_view=live_view, flat_struct=flat_struct)
+        total_compressed, variable_access, config, detector=detector, live_view=live_view, \
+        flat_struct=flat_struct)
 
     # Init the second compressor
     compressor2 = Compressor('2nd', night_data_dir, sharedArray, startTime, sharedArray2, startTime2, \
-        variable_access, config, detector=detector, live_view=live_view, flat_struct=flat_struct)
+        total_compressed, variable_access, config, detector=detector, live_view=live_view, \
+        flat_struct=flat_struct)
 
     
     # Start buffered capture

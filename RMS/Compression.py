@@ -47,8 +47,8 @@ class Compressor(multiprocessing.Process):
 
     running = False
     
-    def __init__(self, name, data_dir, array1, startTime1, array2, startTime2, variable_access, config, \
-        detector=None, live_view=None, flat_struct=None):
+    def __init__(self, name, data_dir, array1, startTime1, array2, startTime2, total_compressed, \
+        variable_access, config, detector=None, live_view=None, flat_struct=None):
         """
 
         Arguments:
@@ -79,6 +79,7 @@ class Compressor(multiprocessing.Process):
         self.array2 = array2
         self.startTime2 = startTime2
         self.variable_access = variable_access
+        self.total_compressed = total_compressed
         self.config = config
 
         self.detector = detector
@@ -196,8 +197,6 @@ class Compressor(multiprocessing.Process):
         """ Retrieve frames from list, convert, compress and save them.
         """
         
-        n = 0
-        
         # Repeat until the compressor is killed from the outside
         while not self.exit.is_set():
 
@@ -240,7 +239,7 @@ class Compressor(multiprocessing.Process):
             if self.startTime1.value != 0:
 
                 # Retrieve time of first frame
-                startTime = self.startTime1.value 
+                startTime = float(self.startTime1.value)
 
                 # Copy frames
                 frames = self.array1 
@@ -249,7 +248,7 @@ class Compressor(multiprocessing.Process):
             else:
 
                 # Retrieve time of first frame
-                startTime = self.startTime2.value 
+                startTime = float(self.startTime2.value)
 
                 # Copy frames
                 frames = self.array2 
@@ -271,8 +270,8 @@ class Compressor(multiprocessing.Process):
             t = time.time()
             
             # Save the compressed image
-            filename = self.saveFF(compressed, startTime, n*256)
-            n += 1
+            filename = self.saveFF(compressed, startTime, self.total_compressed*256)
+            self.total_compressed += 1
             
             log.debug(self.name + " compressor - saving: " + str(time.time() - t) + "s")
 
