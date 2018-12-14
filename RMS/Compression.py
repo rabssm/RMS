@@ -219,6 +219,8 @@ class Compressor(multiprocessing.Process):
 
                     if self.startTime1.value != 0 or self.startTime2.value != 0:
                         self.variable_access.value = 0
+
+                        # Frames became available, break the waiting loop
                         break
 
                     self.variable_access.value = 0
