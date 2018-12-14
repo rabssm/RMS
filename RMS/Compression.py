@@ -47,15 +47,18 @@ class Compressor(multiprocessing.Process):
 
     running = False
     
-    def __init__(self, data_dir, array1, startTime1, array2, startTime2, config, detector=None, 
-        live_view=None, flat_struct=None):
+    def __init__(self, name, data_dir, array1, startTime1, array2, startTime2, variable_access, config, \
+        detector=None, live_view=None, flat_struct=None):
         """
 
         Arguments:
+            name: [str] Name for the compressor.
             array1: first numpy array in shared memory of grayscale video frames
             startTime1: float in shared memory that holds time of first frame in array1
             array2: second numpy array in shared memory
             startTime1: float in shared memory that holds time of first frame in array2
+            variable_access: [multiprocessing Value] COntrols access to shared variables. When set to 1,
+                the shared memory variables are access in another process.
             config: configuration class
 
         Keyword arguments:
@@ -69,11 +72,13 @@ class Compressor(multiprocessing.Process):
         
         super(Compressor, self).__init__()
         
+        self.name = name
         self.data_dir = data_dir
         self.array1 = array1
         self.startTime1 = startTime1
         self.array2 = array2
         self.startTime2 = startTime2
+        self.variable_access = variable_access
         self.config = config
 
         self.detector = detector
@@ -150,10 +155,10 @@ class Compressor(multiprocessing.Process):
         
 
         self.exit.set()
-        log.debug('Compression exit flag set')
+        log.debug(self.name + " compressor - Compression exit flag set")
 
             
-        log.debug('Joining compression...')
+        log.debug(self.name + " compressor - Joining compression...")
 
 
         t_beg = time.time()
@@ -165,11 +170,11 @@ class Compressor(multiprocessing.Process):
 
             # Do not wait more than a minute, just terminate the compression thread then
             if (time.time() - t_beg) > 60:
-                log.debug('Waitied more than 60 seconds for compression to end, killing it...')
+                log.debug(self.name + " compressor - Waitied more than 60 seconds for compression to end, killing it...")
                 break
 
 
-        log.debug('Compression joined!')
+        log.debug(self.name + " compressor - compression joined!")
 
         self.terminate()
         self.join()
@@ -197,12 +202,25 @@ class Compressor(multiprocessing.Process):
         while not self.exit.is_set():
 
             # Block until frames are available
-            while self.startTime1.value == 0 and self.startTime2.value == 0: 
+            while True:
+
+                # Wait unil the start time variables can be accessed
+                while self.variable_access.value == 1:
+                    time.sleep(0.05)
+
+
+                self.variable_access.value = 1
+
+                if self.startTime1.value != 0 or self.startTime2.value != 0:
+                    self.variable_access.value = 0
+                    break
+
+                self.variable_access.value = 0
 
                 # Exit function if process was stopped from the outside
                 if self.exit.is_set():
 
-                    log.debug('Compression run exit')
+                    log.debug(self.name + ' compressor run exit')
                     self.run_exited.set()
 
                     return None
@@ -211,7 +229,12 @@ class Compressor(multiprocessing.Process):
 
                 
 
-            t = time.time()
+            # Wait unil the start time variables can be accessed
+            while self.variable_access.value == 1:
+                time.sleep(0.05)
+
+
+            self.variable_access.value = 1
 
             
             if self.startTime1.value != 0:
@@ -232,6 +255,8 @@ class Compressor(multiprocessing.Process):
                 frames = self.array2 
                 self.startTime2.value = 0
 
+            self.variable_access.value = 0
+
             
             #log.debug("memory copy: " + str(time.time() - t) + "s")
             t = time.time()
@@ -242,14 +267,14 @@ class Compressor(multiprocessing.Process):
             # Cut out the compressed frames to the proper size
             compressed = compressed[:, :self.config.height, :self.config.width]
             
-            log.debug("compression: " + str(time.time() - t) + "s")
+            log.debug(self.name + " compressor - time for compression: " + str(time.time() - t) + "s")
             t = time.time()
             
             # Save the compressed image
             filename = self.saveFF(compressed, startTime, n*256)
             n += 1
             
-            log.debug("saving: " + str(time.time() - t) + "s")
+            log.debug(self.name + " compressor - saving: " + str(time.time() - t) + "s")
 
 
             # Save the extracted intensitites per every field
@@ -265,7 +290,7 @@ class Compressor(multiprocessing.Process):
             filename = "FF_" + filename + "." + self.config.ff_format
 
 
-            log.debug('Extractor started for: ' + filename)
+            log.debug(self.name + " compressor - Extractor started for: " + filename)
 
 
             # Run the detection on the file, if the detector handle was given
@@ -283,7 +308,7 @@ class Compressor(multiprocessing.Process):
 
 
 
-        log.debug('Compression run exit')
+        log.debug(self.name + " compressor - Compression run exit")
         self.run_exited.set()
 
 

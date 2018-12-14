@@ -191,6 +191,8 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     sharedArray2 = sharedArray2.reshape(256, (config.height + array_pad), (config.width + array_pad))
     startTime2 = multiprocessing.Value('d', 0.0)
 
+    variable_access = multiprocessing.Value('d', 0.0)
+
     log.info('Initializing frame buffers done!')
 
 
@@ -222,8 +224,12 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     live_view = LiveViewer(window_name='Maxpixel')
     
     # Initialize compression
-    compressor = Compressor(night_data_dir, sharedArray, startTime, sharedArray2, startTime2, config, 
-        detector=detector, live_view=live_view, flat_struct=flat_struct)
+    compressor = Compressor('1st', night_data_dir, sharedArray, startTime, sharedArray2, startTime2, \
+        variable_access, config, detector=detector, live_view=live_view, flat_struct=flat_struct)
+
+    # Init the second compressor
+    compressor2 = Compressor('2nd', night_data_dir, sharedArray, startTime, sharedArray2, startTime2, \
+        variable_access, config, detector=detector, live_view=live_view, flat_struct=flat_struct)
 
     
     # Start buffered capture
@@ -231,6 +237,7 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
 
     # Start the compression
     compressor.start()
+    compressor2.start()
 
     
     # Capture until Ctrl+C is pressed
@@ -253,6 +260,7 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     # Stop the compressor
     log.debug('Stopping compression...')
     detector, live_view = compressor.stop()
+    compressor2.stop()
     log.debug('Compression stopped')
 
     # Stop the live viewer
