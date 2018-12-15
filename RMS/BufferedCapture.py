@@ -145,7 +145,10 @@ class BufferedCapture(Process):
                     for i in range(500):
 
                         print('Trying to ping the IP camera...')
-                        ping_success = ping(ip)
+                        try:
+                            ping_success = ping(ip)
+                        except:
+                            ping_success = False
 
                         if ping_success:
                             log.info("Camera IP ping successful!")
