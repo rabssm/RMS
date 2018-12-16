@@ -206,12 +206,12 @@ class Compressor(multiprocessing.Process):
             # Block until frames are available
             while True:
 
-                # Wait unil the start time variables can be accessed
+                # Wait unil the start time variables can be accessed to prevent clashes with the other thread
                 while True:
                     with self.compressor_lock:
                         if self.variable_access.value == 0:
                             break
-                    time.sleep(0.05)
+                    time.sleep(0.01)
 
 
                 with self.compressor_lock:
@@ -220,10 +220,31 @@ class Compressor(multiprocessing.Process):
                     if self.startTime1.value != 0 or self.startTime2.value != 0:
                         self.variable_access.value = 0
 
+                        # Set the frames for precessing
+                        if self.startTime1.value != 0:
+
+                            # Retrieve time of first frame
+                            startTime = float(self.startTime1.value)
+
+                            # Copy frames
+                            frames = self.array1 
+                            self.startTime1.value = 0
+
+                        else:
+
+                            # Retrieve time of first frame
+                            startTime = float(self.startTime2.value)
+
+                            # Copy frames
+                            frames = self.array2 
+                            self.startTime2.value = 0
+
                         # Frames became available, break the waiting loop
                         break
 
                     self.variable_access.value = 0
+
+
 
                 # Exit function if process was stopped from the outside
                 if self.exit.is_set():
@@ -234,39 +255,6 @@ class Compressor(multiprocessing.Process):
                     return None
 
                 time.sleep(0.1)
-
-                
-
-            # Wait unil the start time variables can be accessed
-            while True:
-                with self.compressor_lock:
-                    if self.variable_access.value == 0:
-                        break
-                time.sleep(0.05)
-
-            with self.compressor_lock:
-                self.variable_access.value = 1
-
-                
-                if self.startTime1.value != 0:
-
-                    # Retrieve time of first frame
-                    startTime = float(self.startTime1.value)
-
-                    # Copy frames
-                    frames = self.array1 
-                    self.startTime1.value = 0
-
-                else:
-
-                    # Retrieve time of first frame
-                    startTime = float(self.startTime2.value)
-
-                    # Copy frames
-                    frames = self.array2 
-                    self.startTime2.value = 0
-
-                self.variable_access.value = 0
 
             
 
