@@ -109,7 +109,10 @@ class VideoRecorder(Process):
         # Clean up any old video files from the ram disk
         video_file_list = sorted(glob.glob(TMP_VIDEO_DIR + '/*' + VIDEO_EXTENSION), key=os.path.getatime)
         for video_file in video_file_list :
-            os.remove(video_file)
+            try:
+                os.remove(video_file)
+            except OSError :
+                log.info('Unable to remove file from RAM disk')
 
 
 
@@ -131,10 +134,17 @@ class VideoRecorder(Process):
             filename, file_extension = os.path.splitext(video_file)
             new_file_name = VIDEO_FILE_PREFIX + self.stationID.upper() + datetime.datetime.utcfromtimestamp(ts).strftime('_%Y%m%d_%H%M%S_%f' + file_extension)
             log.info("Copying video " + video_file +  " to " + self.data_dir + '/' + new_file_name)
-            shutil.copy2(video_file, self.data_dir + '/' + new_file_name)
+
+            try:
+                shutil.copy2(video_file, self.data_dir + '/' + new_file_name)
+            except shutil.Error :
+                log.info('Unable to copy file from RAM disk to capture directory')
 
             # Remove the temporary video file from the RAM disk
-            os.remove(video_file)
+            try:
+                os.remove(video_file)
+            except OSError :
+                log.info('Unable to remove file from RAM disk')
 
 
     def run(self):
@@ -147,7 +157,7 @@ class VideoRecorder(Process):
         # Run until stopped from the outside
         while not self.exit.is_set():
 
-            # Start the ffmpeg subprocess with timezone GMT
+            # Start the video streamer subprocess with timezone GMT
             args = self.video_cmd.split()
             log.info("Running subprocess: " + self.video_cmd)
             p = subprocess.Popen(args, env={'TZ': 'GMT'})
