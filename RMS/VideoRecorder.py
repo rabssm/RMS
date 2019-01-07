@@ -32,7 +32,7 @@ from RMS.Misc import ping
 The directory for temporary video file storage is a tmpfs RAM directory created with this entry in the /etc/fstab:
 tmpfs   /rmstmp    tmpfs    defaults,noatime,nosuid,mode=0777,size=100m    0 0
 """
-TMP_VIDEO_DIR =  '/tmp/' # Videos are captured to this temporary RAM disk
+TMP_VIDEO_DIR =  '/rmstmp/' # Videos are captured to this temporary RAM disk
 VIDEO_EXTENSION = '.mkv'    # Video file extension '.h264' |'.mp4' | '.mkv' | '.avi'
 VIDEO_FILE_PREFIX = 'RH_'
 
@@ -65,7 +65,6 @@ class VideoRecorder(Process):
 
         self.stationID = self.config.stationID
 
-        # self.video_cmd = 'gst-launch-1.0 rtspsrc location=' + RTSP_STREAM + ' ! rtpjitterbuffer ! rtph264depay ! h264parse ! video/x-h264 ! splitmuxsink location=' + TMP_VIDEO_DIR + 'video%06d.mkv max-size-time=' + str(int(self.video_segment_time*1e9)) + ' max-size-bytes=100000000 muxer=matroskamux'
         self.video_cmd = self.config.video_recorder
         log.info("Video capture command: " + self.video_cmd)
 
@@ -131,7 +130,7 @@ class VideoRecorder(Process):
             ts = os.path.getatime(video_file)
             filename, file_extension = os.path.splitext(video_file)
             new_file_name = VIDEO_FILE_PREFIX + self.stationID.upper() + datetime.datetime.utcfromtimestamp(ts).strftime('_%Y%m%d_%H%M%S_%f' + file_extension)
-            print("Copying video " + video_file +  " to " + self.data_dir + '/' + new_file_name)
+            log.info("Copying video " + video_file +  " to " + self.data_dir + '/' + new_file_name)
             shutil.copy2(video_file, self.data_dir + '/' + new_file_name)
 
             # Remove the temporary video file from the RAM disk
