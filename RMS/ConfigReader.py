@@ -1,16 +1,16 @@
 # RPi Meteor Station
 # Copyright (C) 2016  Dario Zubovic, Denis Vida
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ try:
 
 except:
     # Python 3
-    from configparser import RawConfigParser, NoOptionError 
+    from configparser import RawConfigParser, NoOptionError
 
 
 
@@ -53,7 +53,7 @@ class Config:
         self.longitude = 0
         self.elevation = 0
         self.cams_code = 0
-        
+
         ##### Capture
         self.deviceID = 0
 
@@ -78,7 +78,7 @@ class Config:
         self.gamma = 1.0
 
         self.ff_format = 'fits'
-        
+
         self.fov_w = 64.0
         self.fov_h = 35.0
         self.deinterlace_order = -2
@@ -112,11 +112,11 @@ class Config:
 
         ##### Weave compilation arguments
         self.extra_compile_args = ["-O3"]
-        
+
         ##### FireballDetection
         self.f = 16                    # subsampling factor
         self.max_time = 25             # maximum time for line finding
-        
+
         # params for Extractor.findPoints()
         self.white_avg_level = 220     # ignore images which have the average frame above this level
         self.min_level = 40            # ignore pixel if below this level
@@ -127,17 +127,17 @@ class Config:
         self.max_per_frame_factor = 10 # multiplied with median number of points for flare detection
         self.max_points = 190          # if there are too many points in total after flare removal, randomize them
         self.min_frames = 4            # minimum number of frames
-        
+
         # params for Extractor.testPoints()
         self.min_points = 4            # minimum number of event points
-        
+
         # params for Extractor.extract()
         self.before = 0.15             # percentage of frames to extrapolate before detected start of meteor trail
         self.after = 0.3               # percentage of frames to extrapolate after detected end of meteor trail
         self.limitForSize = 0.90
         self.minSize = 40
         self.maxSize = 192
-        
+
         # params for Grouping3D
         self.distance_threshold = 4900  # maximum distance between the line and the point to be takes as a part of the same line
         self.gap_threshold = 16900      # maximum allowed gap between points
@@ -147,10 +147,10 @@ class Config:
         self.max_lines = 5             # maximum number of lines
 
         ##### MeteorDetection
-        
+
         # KHT detection parameters
         self.ff_min_stars = 5
-        
+
         self.k1_det = 1.5 # weight for stddev in thresholding for faint meteor detection
         self.j1_det = 9 # absolute levels above average in thresholding for faint meteor detection
         self.max_white_ratio = 0.07 # maximum ratio of white to all pixels on a thresholded image (used to avoid searching on very messed up images)
@@ -241,9 +241,9 @@ class Config:
 
 def normalizeParameter(param, config):
     """ Normalize detection parameter to be size independent.
-    
+
     @param param: parameter to be normalized
-    
+
     @return: normalized param
     """
 
@@ -261,11 +261,11 @@ def parse(filename):
         parser = RawConfigParser()
 
     parser.read(filename)
-    
+
     config = Config()
-    
+
     parseAllSections(config, parser)
-    
+
     return config
 
 
@@ -285,11 +285,11 @@ def parseAllSections(config, parser):
 
 
 def parseSystem(config, parser):
-    
+
     section= "System"
     if not parser.has_section(section):
         raise RuntimeError("Not configured!")
-    
+
     try:
         config.stationID = parser.get(section, "stationID")
     except NoOptionError:
@@ -304,7 +304,7 @@ def parseSystem(config, parser):
 
     if parser.has_option(section, "elevation"):
         config.elevation = parser.getfloat(section, "elevation")
-        
+
 
     if parser.has_option(section, "cams_code"):
         config.cams_code = parser.getint(section, "cams_code")
@@ -313,39 +313,39 @@ def parseSystem(config, parser):
 
 def parseCapture(config, parser):
     section = "Capture"
-    
+
     if not parser.has_section(section):
         return
 
     if parser.has_option(section, "data_dir"):
-        
+
         config.data_dir = parser.get(section, "data_dir")
 
         # Parse the home folder appropriately
         if config.data_dir[0] == '~':
-            
+
             config.data_dir = config.data_dir.replace('~', '')
-            
+
             # Remove the directory separator if it is at the beginning of the path
             if config.data_dir[0] == os.sep:
                 config.data_dir = config.data_dir[1:]
-            
+
             config.data_dir = os.path.join(os.path.expanduser('~'), config.data_dir)
-    
+
 
     if parser.has_option(section, "captured_dir"):
         config.captured_dir = parser.get(section, "captured_dir")
-    
+
     if parser.has_option(section, "archived_dir"):
         config.archived_dir = parser.get(section, "archived_dir")
-    
+
     if parser.has_option(section, "width"):
         config.width = parser.getint(section, "width")
 
         # Save original input image size
         config.width_device = config.width
 
-       
+
     if parser.has_option(section, "height"):
         config.height = parser.getint(section, "height")
 
@@ -408,7 +408,7 @@ def parseCapture(config, parser):
 
     if parser.has_option(section, "gamma"):
         config.gamma = parser.getfloat(section, "gamma")
-    
+
     if parser.has_option(section, "device"):
         config.deviceID = parser.get(section, "device")
 
@@ -438,11 +438,14 @@ def parseCapture(config, parser):
     if parser.has_option(section, "mask"):
         config.mask_file = parser.get(section, "mask")
 
+    if parser.has_option(section, "video_recorder"):
+        config.video_recorder = parser.get(section, "video_recorder")
+
 
 
 def parseUpload(config, parser):
     section = "Upload"
-    
+
     if not parser.has_section(section):
         return
 
@@ -469,15 +472,15 @@ def parseUpload(config, parser):
     # Directory on the server where the detected files will be uploaded to
     if parser.has_option(section, "remote_dir"):
         config.remote_dir = parser.get(section, "remote_dir")
-        
+
 
 
 def parseBuildArgs(config, parser):
     section = "Build"
-    
+
     if not parser.has_section(section):
         return
-    
+
     linux_pc_weave = None
     win_pc_weave = None
     rpi_weave = None
@@ -490,9 +493,9 @@ def parseBuildArgs(config, parser):
 
     if parser.has_option(section, "win_pc_weave"):
         win_pc_weave = parser.get(section, "win_pc_weave").split()
-        
 
-    # Read in the KHT library path for both the PC and the RPi, but decide which one to take based on the 
+
+    # Read in the KHT library path for both the PC and the RPi, but decide which one to take based on the
     # system this is running on
     config.extra_compile_args = choosePlatform(win_pc_weave, rpi_weave, linux_pc_weave)
 
@@ -506,83 +509,83 @@ def parseCompression(config, parser):
 
 def parseFireballDetection(config, parser):
     section = "FireballDetection"
-    
+
     if not parser.has_section(section):
         return
-    
+
     if parser.has_option(section, "subsampling_size"):
         config.f = parser.getint(section, "subsampling_size")
-        
+
     if parser.has_option(section, "max_time"):
         config.max_time = parser.getint(section, "max_time")
 
     if parser.has_option(section, "white_avg_level"):
         config.white_avg_level = parser.getint(section, "white_avg_level")
-    
+
     if parser.has_option(section, "minimal_level"):
         config.min_level = parser.getint(section, "minimal_level")
-    
+
     if parser.has_option(section, "minimum_pixels"):
         config.min_pixels = parser.getint(section, "minimum_pixels")
-    
+
     if parser.has_option(section, "k1"):
         config.k1 = parser.getfloat(section, "k1")
 
     if parser.has_option(section, "j1"):
         config.j1 = parser.getint(section, "j1")
-    
+
     if parser.has_option(section, "max_points_per_frame"):
         config.max_points_per_frame = parser.getint(section, "max_points_per_frame")
-    
+
     if parser.has_option(section, "max_per_frame_factor"):
         config.max_per_frame_factor = parser.getint(section, "max_per_frame_factor")
-    
+
     if parser.has_option(section, "max_points"):
         config.max_points = parser.getint(section, "max_points")
-    
+
     if parser.has_option(section, "min_frames"):
         config.min_frames = parser.getint(section, "min_frames")
-    
+
     if parser.has_option(section, "min_points"):
         config.min_points = parser.getint(section, "min_points")
-    
+
     if parser.has_option(section, "extend_before"):
         config.before = parser.getfloat(section, "extend_before")
-    
+
     if parser.has_option(section, "extend_after"):
         config.after = parser.getfloat(section, "extend_after")
-    
+
     if parser.has_option(section, "min_window_size"):
         config.minSize = parser.getint(section, "min_window_size")
-    
+
     if parser.has_option(section, "max_window_size"):
         config.maxSize = parser.getint(section, "max_window_size")
-    
+
     if parser.has_option(section, "threshold_for_size"):
         config.limitForSize = parser.getfloat(section, "threshold_for_size")
-    
+
     if parser.has_option(section, "distance_threshold"):
         config.distance_threshold = parser.getint(section, "distance_threshold")**2
-    
+
     config.distance_threshold = normalizeParameter(config.distance_threshold, config)
-    
+
     if parser.has_option(section, "gap_threshold"):
         config.gap_threshold = parser.getint(section, "gap_threshold")**2
-    
+
     config.gap_threshold = normalizeParameter(config.gap_threshold, config)
 
     if parser.has_option(section, "line_minimum_frame_range"):
         config.line_minimum_frame_range = parser.getint(section, "line_minimum_frame_range")
-    
+
     if parser.has_option(section, "line_distance_const"):
         config.line_distance_const = parser.getint(section, "line_distance_const")
-    
+
     if parser.has_option(section, "point_ratio_threshold"):
-        config.point_ratio_threshold = parser.getfloat(section, "point_ratio_threshold")        
-    
+        config.point_ratio_threshold = parser.getfloat(section, "point_ratio_threshold")
+
     if parser.has_option(section, "max_lines"):
         config.max_lines = parser.getint(section, "max_lines")
-    
+
     if parser.has_option(section, "min_lines"):
         config.max_lines = parser.getint(section, "max_lines")
 
@@ -590,13 +593,13 @@ def parseFireballDetection(config, parser):
 
 def parseMeteorDetection(config, parser):
     section = "MeteorDetection"
-    
+
     if not parser.has_section(section):
         return
 
     if parser.has_option(section, "ff_min_stars"):
         config.ff_min_stars = parser.getint(section, "ff_min_stars")
-    
+
     if parser.has_option(section, "k1"):
         config.k1_det = parser.getfloat(section, "k1")
 
@@ -646,13 +649,13 @@ def parseMeteorDetection(config, parser):
     if parser.has_option(section, "max_points_det"):
         config.max_points_det = parser.getint(section, "max_points_det")
 
-    
-    # Read in the KHT library path for both the PC and the RPi, but decide which one to take based on the 
+
+    # Read in the KHT library path for both the PC and the RPi, but decide which one to take based on the
     # system this is running on
     rpi_kht_lib_path = None
     linux_pc_kht_lib_path = None
     win_pc_kht_lib_path = None
-    
+
     if parser.has_option(section, "rpi_kht_lib_path"):
         rpi_kht_lib_path = parser.get(section, "rpi_kht_lib_path")
 
@@ -691,7 +694,7 @@ def parseMeteorDetection(config, parser):
 
 def parseStarExtraction(config, parser):
     section = "StarExtraction"
-    
+
     if not parser.has_section(section):
         return
 
@@ -723,7 +726,7 @@ def parseStarExtraction(config, parser):
 
 def parseCalibration(config, parser):
     section = "Calibration"
-    
+
     if not parser.has_section(section):
         return
 
@@ -743,7 +746,7 @@ def parseCalibration(config, parser):
         config.star_catalog_file = parser.get(section, "star_catalog_file")
 
     if parser.has_option(section, "star_catalog_band_ratios"):
-        
+
         ratios_str = parser.get(section, "star_catalog_band_ratios")
 
         # Parse the ratios as a list of floats
@@ -799,7 +802,7 @@ def parseCalibration(config, parser):
 
 def parseThumbnails(config, parser):
     section = "Thumbnails"
-    
+
     if not parser.has_section(section):
         return
 
