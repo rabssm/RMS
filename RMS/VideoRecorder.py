@@ -175,6 +175,8 @@ class VideoRecorder(Process):
                 p.terminate()
                 p.wait()
                 log.info("Process terminated")
+            else:
+                log.info("Video device is probably disconnected - attempting reconnect")
 
             time.sleep(10)
 
