@@ -25,8 +25,8 @@ import subprocess
 import re
 
 
-FIELD_SOLVER_CMD = os.path.expanduser('~/Applications/astrometry/bin/solve-field')  #  !!! TODO - Get this from config
-FIELD_SOLVER_PARAMS = '--cpulimit 60 --no-remove-lines --uniformize 0 --no-plots --extension 1 --overwrite --downsample 4 --crpix-center' # --scale-low 45 --scale-high 100'
+# FIELD_SOLVER_CMD = os.path.expanduser('~/Applications/astrometry/bin/solve-field')  #
+# FIELD_SOLVER_PARAMS = '--cpulimit 60 --no-remove-lines --uniformize 0 --no-plots --extension 1 --overwrite --downsample 4 --crpix-center' # --scale-low 45 --scale-high 100'
 
 # Get the logger from the main module
 log = logging.getLogger("logger")
@@ -38,12 +38,11 @@ class FieldSolver(Process):
 
     running = False
 
-    def __init__(self, queue, solver_cmd, image_name, config, max_time=60):
+    def __init__(self, queue, image_name, config, max_time=60):
         """ Solve a field
 
         Arguments:
             queue: subprocess queue object to hold the result
-            solver_cmd: the command to be used for solving the field (e.g. astrometry/bin/solve_field)
             image_name: FITS image to be plate solved
             config: object containing the RMS configuration
 
@@ -55,9 +54,9 @@ class FieldSolver(Process):
 
         self.queue = queue
         self.image_name = image_name
-        self.solver_cmd = solver_cmd
         self.config = config
-        self.fov_w = config.fov_w
+        self.fov_w = self.config.fov_w
+        self.solver_cmd = config.field_solver
 
         log.info("Plate solver command: " + self.solver_cmd)
 
@@ -157,21 +156,23 @@ if __name__ == "__main__":
     ap.add_argument("fits_image", help="The name of the FITS image to plate solve")
     args = vars(ap.parse_args())
     image_name = args["fits_image"]
-    # image_name = os.path.expanduser('~/RMS_data/ArchivedFiles/UK0001_20190130_172949_481408/FF_UK0001_20190131_001745_605_0610304.fits')
 
     # Load the configuration file
     import RMS.ConfigReader as cr
     config = cr.parse(".config")
 
-
+    # Create a queue to hold the result of the field solver
     q = Queue()
-    field_solver = FieldSolver(q, FIELD_SOLVER_CMD + ' ' + FIELD_SOLVER_PARAMS, image_name, config)
 
+    # Create the field solver and start it running
+    field_solver = FieldSolver(q, image_name, config)
     field_solver.startSolver()
 
+    # Wait for the solver to complete
     while field_solver.is_alive() :
         time.sleep(1)
 
+    # Get the results of the field solver
     try:
         print(q.get(timeout=1))
     except:
