@@ -798,6 +798,8 @@ def parseCalibration(config, parser):
     if parser.has_option(section, "min_estimation_value"):
         config.min_estimation_value = parser.getfloat(section, "min_estimation_value")
 
+    if parser.has_option(section, "field_solver"):
+        config.field_solver = parser.get(section, "field_solver")
 
 
 def parseThumbnails(config, parser):
