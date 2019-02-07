@@ -108,8 +108,8 @@ class FieldSolver(Process):
 
         #print(ra_dec[0][0])
         if len(ra_dec) > 0 and len(rotation_angle) > 0 :
-            result_list = list(ra_dec[0])
-            result_list.append(rotation_angle[0])
+            result_list = [float(ra_dec[0][0]), float(ra_dec[0][1])]
+            result_list.append(float(rotation_angle[0]))
             self.queue.put(result_list)
 
 
