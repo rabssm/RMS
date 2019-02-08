@@ -107,7 +107,7 @@ class FieldSolver(Process):
             result = re.findall('Field rotation angle: up is *(\d.+) +degrees', line)
             if len(result) > 0 : rotation_angle = result
 
-        if len(ra_dec) > 0 and len(rotation_angle) > 0 :
+        if len(ra_dec) > 0 and len(field_size) > 0 and len(rotation_angle) > 0 :
             result_list = [float(ra_dec[0][0]), float(ra_dec[0][1])]
             result_list.append(float(field_size[0][0]))
             result_list.append(float(field_size[0][1]))
