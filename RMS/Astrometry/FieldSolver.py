@@ -91,8 +91,8 @@ class FieldSolver(Process):
 
 
     def format_results(self, initial_results) :
-        """ Read the solver's result and add the list to the result queue
-        [ra, dec, rotation_angle]
+        """ Read the solver's results and add to the result queue
+        [ra, dec, width, height, rotation_angle]
         """
 
         ra_dec = []
@@ -100,15 +100,17 @@ class FieldSolver(Process):
         result_list = initial_results.splitlines()
 
         for line in result_list :
-            #print(line)
             result = re.findall('Field center: *\(RA,Dec\) *= *\((\d.+), *(\d.+)\) *deg', line)
             if len(result) > 0 : ra_dec = result
+            result = re.findall('Field size: *(\d.+) +x +(\d.+) +degrees', line)
+            if len(result) > 0 : field_size = result
             result = re.findall('Field rotation angle: up is *(\d.+) +degrees', line)
             if len(result) > 0 : rotation_angle = result
 
-        #print(ra_dec[0][0])
         if len(ra_dec) > 0 and len(rotation_angle) > 0 :
             result_list = [float(ra_dec[0][0]), float(ra_dec[0][1])]
+            result_list.append(float(field_size[0][0]))
+            result_list.append(float(field_size[0][1]))
             result_list.append(float(rotation_angle[0]))
             self.queue.put(result_list)
 
